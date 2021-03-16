@@ -22,8 +22,8 @@ spec:
           value: $(params.branch-name)
   params:
   - name: repo-url
-    value: {{{ .repository.url }}}
+    value: {{{ .Clone }}}
   - name: branch-name
-    value: {{{ .repository.branch }}}
+    value: {{{ .Branch }}}
 
           
