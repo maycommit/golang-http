@@ -4,6 +4,11 @@ metadata:
   name: "{{ .Name }}-push"
 spec:
   pipelineSpec:
+    workspaces:
+    - name: "{{ .Name }}-workspace"
+      description: |
+        This workspace will receive the cloned git repo and be passed
+        to the next Task.
     params:
     - name: repo-url
       type: string
@@ -20,10 +25,19 @@ spec:
           value: $(params.repo-url)
         - name: revision
           value: $(params.branch-name)
+        workspaces:
+        - name: output
+          workspace: "{{ .Name }}-workspace"
+      - name: "golang-default-quality"
+        runAfter: ["git-clone"]
+        taskRef:
+          name: "https://raw.githubusercontent.com/maycommit/tasks/master/golang-default-quality/task.yaml"
+        workspaces:
+        - name: source
+          workspace: "{{ .Name }}-workspace"
   params:
   - name: repo-url
-    value: {{ .Clone }}
+    value: {{ .RepositoryURL }}
   - name: branch-name
     value: {{ .Branch }}
 
-          
