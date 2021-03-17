@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineRun
 metadata:
-  name: golang-http-merge-request
+  name: "{{ .Name }}-push"
 spec:
   pipelineSpec:
     params:
@@ -22,8 +22,8 @@ spec:
           value: $(params.branch-name)
   params:
   - name: repo-url
-    value: {{{ .repository.url }}}
+    value: {{ .Clone }}
   - name: branch-name
-    value: {{{ .repository.branch }}}
+    value: {{ .Branch }}
 
           
