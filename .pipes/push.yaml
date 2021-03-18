@@ -18,6 +18,10 @@ spec:
       description: The git branch to clone.
     - name: project-name
       type: string
+    results:
+    - name: current-image
+      description: the sum of all three operands
+      value: $(tasks.build-and-push.results.current-image)
     tasks:
       - name: "git-clone"
         taskRef:
@@ -49,23 +53,33 @@ spec:
         workspaces:
           - name: source
             workspace: "{{ .Name }}-workspace"
-      - name: deploy
+      - name: deploy-helm
         runAfter: ["build-and-push"]
         workspaces:
           - name: source
             workspace: "{{ .Name }}-workspace"
+        params:
+          - name: image
+            value: $(tasks.build-and-push.results.current-image)
         taskSpec:
+          params:
+            - name: image
+              type: string
           workspaces:
             - name: source
           steps:
-            - name: deploy
-              workingDir: $(workspaces.source.path)
-              image: jeias/helm-goldenimg:2.0.0
-              env:
-                - name: HELM_APP
-                  value: {{ .Name }}
-                - name: APP_VERSION
-                  value: $(tasks.build-and-push.results.current-image)
+          - name: echo
+            image: jeias/helm-goldenimg:2.0.3
+            workingDir: $(workspaces.source.path)
+            env:
+              - name: HELM_APP
+                value: "{{ .Name }}"
+              - name: APP_VERSION
+                value: "$(params.image)"
+            script: |
+              echo $APP_VERSION
+              echo $HELP_APP
+              node /app/index.js
         
   params:
   - name: repo-url
@@ -74,4 +88,3 @@ spec:
     value: {{ .Branch }}
   - name: project-name
     value: {{ .Name }}
-
