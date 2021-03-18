@@ -54,7 +54,7 @@ spec:
         taskSpec:
           steps:
             - name: deploy
-              image: docker pull jeias/helm-goldenimg:2.0.0
+              image: jeias/helm-goldenimg:2.0.0
               env:
                 - name: HELM_APP
                   value: {{ .Name }}
