@@ -51,15 +51,22 @@ spec:
             workspace: "{{ .Name }}-workspace"
       - name: deploy
         runAfter: ["build-and-push"]
+        workspaces:
+          - name: source
+            workspace: "{{ .Name }}-workspace"
         taskSpec:
+          workspaces:
+            - name: source
           steps:
             - name: deploy
+              workingDir: $(workspaces.source.path)
               image: jeias/helm-goldenimg:2.0.0
               env:
                 - name: HELM_APP
                   value: {{ .Name }}
                 - name: APP_VERSION
                   value: $(tasks.build-and-push.results.current-image)
+        
   params:
   - name: repo-url
     value: {{ .RepositoryURL }}
