@@ -16,6 +16,8 @@ spec:
     - name: branch-name
       type: string
       description: The git branch to clone.
+    - name: project-name
+      type: string
     tasks:
       - name: "git-clone"
         taskRef:
@@ -35,9 +37,34 @@ spec:
         workspaces:
         - name: source
           workspace: "{{ .Name }}-workspace"
+      - name: build-and-push
+        runAfter: ["git-clone"]
+        taskRef:
+          name: https://raw.githubusercontent.com/maycommit/tasks/master/build-and-push/task.yaml
+        params:
+        - name: name
+          value: $(params.project-name)
+        - name: revision
+          value: $(params.branch-name)
+        workspaces:
+          - name: source
+            workspace: "{{ .Name }}-workspace"
+      - name: deploy
+        runAfter: ["build-and-push"]
+        taskSpec:
+          steps:
+            - name: deploy
+              image: docker pull jeias/helm-goldenimg:2.0.0
+              env:
+                - name: HELM_APP
+                  value: {{ .Name }}
+                - name: APP_VERSION
+                  value: $(tasks.build-and-push.results.current-image)
   params:
   - name: repo-url
     value: {{ .RepositoryURL }}
   - name: branch-name
     value: {{ .Branch }}
+  - name: project-name
+    value: {{ .Name }}
 
