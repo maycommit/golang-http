@@ -1,10 +1,5 @@
 name: ci
 
-trigger:
-  push:
-    branches:
-      - release-*
-
 tasks:
   static-analisys:
     remoteTask: "https://raw.githubusercontent.com/maycommit/tasks/master/golang-default-quality/task.yaml"
