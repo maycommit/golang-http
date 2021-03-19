@@ -1,90 +1,32 @@
-apiVersion: tekton.dev/v1alpha1
-kind: PipelineRun
-metadata:
-  name: "{{ .Name }}-push"
-spec:
-  pipelineSpec:
-    workspaces:
-    - name: "{{ .Name }}-workspace"
-      description: |
-        This workspace will receive the cloned git repo and be passed
-        to the next Task.
-    params:
-    - name: repo-url
-      type: string
-      description: The git repository URL to clone from.
-    - name: branch-name
-      type: string
-      description: The git branch to clone.
-    - name: project-name
-      type: string
-    results:
-    - name: current-image
-      description: the sum of all three operands
-      value: $(tasks.build-and-push.results.current-image)
-    tasks:
-      - name: "git-clone"
-        taskRef:
-          name: "https://raw.githubusercontent.com/tektoncd/catalog/master/task/git-clone/0.3/git-clone.yaml"
-        params:
-        - name: url
-          value: $(params.repo-url)
-        - name: revision
-          value: $(params.branch-name)
-        workspaces:
-        - name: output
-          workspace: "{{ .Name }}-workspace"
-      - name: "golang-default-quality"
-        runAfter: ["git-clone"]
-        taskRef:
-          name: "https://raw.githubusercontent.com/maycommit/tasks/master/golang-default-quality/task.yaml"
-        workspaces:
-        - name: source
-          workspace: "{{ .Name }}-workspace"
-      - name: build-and-push
-        runAfter: ["git-clone"]
-        taskRef:
-          name: https://raw.githubusercontent.com/maycommit/tasks/master/build-and-push/task.yaml
-        params:
-        - name: name
-          value: $(params.project-name)
-        - name: revision
-          value: $(params.branch-name)
-        workspaces:
-          - name: source
-            workspace: "{{ .Name }}-workspace"
-      - name: deploy-helm
-        runAfter: ["build-and-push"]
-        workspaces:
-          - name: source
-            workspace: "{{ .Name }}-workspace"
-        params:
-          - name: image
-            value: $(tasks.build-and-push.results.current-image)
-        taskSpec:
-          params:
-            - name: image
-              type: string
-          workspaces:
-            - name: source
-          steps:
-          - name: echo
-            image: jeias/helm-goldenimg:2.0.3
-            workingDir: $(workspaces.source.path)
-            env:
-              - name: HELM_APP
-                value: "{{ .Name }}"
-              - name: APP_VERSION
-                value: "$(params.image)"
-            script: |
-              echo $APP_VERSION
-              echo $HELP_APP
-              node /app/index.js
-        
-  params:
-  - name: repo-url
-    value: {{ .RepositoryURL }}
-  - name: branch-name
-    value: {{ .Branch }}
-  - name: project-name
-    value: {{ .Name }}
+name: ci
+
+trigger:
+  push:
+    branches:
+      - release-*
+
+tasks:
+  static-analisys:
+    remoteTask: "https://raw.githubusercontent.com/maycommit/tasks/master/golang-default-quality/task.yaml"
+
+  build-and-push:
+    runAfter: ["static-analisys"]
+    remoteTask: "https://raw.githubusercontent.com/maycommit/tasks/master/build-and-push/task.yaml"
+    inputs:
+      - name: name
+        value: {{ .Name }}
+      - name: revision
+        value: {{ .Branch }}
+
+  deploy-helm:
+    runAfter: ["build-and-push"]
+    inputs:
+      - name: image
+        value: $(tasks.build-and-push.results.current-image)
+    steps:
+      - image: "jeias/helm-goldenimg:2.0.4"
+        env:
+          - name: HELM_APP
+            value: {{ .Name }}
+          - name: APP_VERSION
+            value: $(params.image)
