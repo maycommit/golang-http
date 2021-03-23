@@ -19,7 +19,7 @@ tasks:
       - name: image
         value: $(tasks.build-and-push.results.current-image)
     steps:
-      - image: "jeias/helm-goldenimg:2.0.4"
+      - image: "jeias/helm-goldenimg:2.0.6"
         env:
           - name: HELM_APP
             value: {{ .Name }}
