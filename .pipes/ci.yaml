@@ -22,6 +22,6 @@ tasks:
       - image: "jeias/helm-goldenimg:2.0.6"
         env:
           - name: HELM_APP
-            value: {{ .Name }}
+            value: "{{ .Name }}-{{ .Branch }}"
           - name: APP_VERSION
             value: $(params.image)
